@@ -85,7 +85,7 @@ const update = async (req, res, next) => {
     }
 
     const { id } = req.params
-    const { name, description, image, index, slug } = req.body
+    const { name, description, index, slug } = req.body
 
     if (!name || name.trim() === '') {
       throw new AppError('Tên danh mục blog là bắt buộc', 400)
@@ -94,6 +94,7 @@ const update = async (req, res, next) => {
     if (name.length > 255) {
       throw new AppError('Tên danh mục blog không được vượt quá 255 ký tự', 400)
     }
+    const image = req.file ? `/uploads/${req.file.filename}` : null
 
     const category = await categoryModel.updateCategory(
       id,
