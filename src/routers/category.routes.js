@@ -11,19 +11,19 @@ router.get('/:id', categoryController.getById)
 router.post(
   '/',
   authenticate,
-    upload.single('image'),
+  upload.single('image'),
   categoryController.create
 )
 router.put(
   '/update-index',
   authenticate,
-  //   upload.single('image'),
+  upload.single('image'),
   categoryController.updateIndexes
 )
 router.put(
   '/:id',
   authenticate,
-    upload.single('image'),
+  upload.single('image'),
   categoryController.update
 )
 router.delete('/:id', authenticate, categoryController.remove)
