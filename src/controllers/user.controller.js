@@ -119,7 +119,7 @@ const create = async (req, res) => {
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       role_id,
-      phone_number: phone_number ? phone_number.trim() : null
+      phone_number: phone_number ? phone_number.trim() : ''
     })
 
     // Không trả về password
@@ -234,8 +234,7 @@ const update = async (req, res) => {
       email: email ? email.toLowerCase().trim() : undefined,
       role_id,
       active: activeBool,
-      phone_number:
-        phone_number !== undefined ? phone_number.trim() : undefined,
+      phone_number: phone_number ? phone_number.trim() : '',
       updated_by: req.user.id // Lưu ai đã update
     })
 
