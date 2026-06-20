@@ -357,7 +357,7 @@ const createProduct = async (
       active,
       index,
       slug,
-      (sub_category_id = 0),
+      sub_category_id,
       is_featured,
       image
     ]
@@ -414,7 +414,7 @@ const updateProduct = async (
       active,
       index,
       slug,
-      sub_category_id = 0,
+      sub_category_id,
       is_featured,
       keyword = []
     } = data
@@ -507,7 +507,7 @@ const updateProduct = async (
 
     if (sub_category_id !== undefined) {
       updateFields.push(`sub_category_id = $${paramIndex}`)
-      params.push(sub_category_id)
+      params.push(sub_category_id || null)
       paramIndex++
     }
 
