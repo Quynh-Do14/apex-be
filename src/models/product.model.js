@@ -8,7 +8,10 @@ const getAllProducts = async ({
   category_id,
   brand_id,
   min_price,
-  max_price
+  max_price,
+  active,
+  sub_category_id,
+  is_featured
 }) => {
   const offset = (page - 1) * limit
   const queryParams = []
@@ -53,6 +56,16 @@ const getAllProducts = async ({
   if (max_price) {
     queryParams.push(max_price)
     conditions.push(`p.price <= $${queryParams.length}`)
+  }
+
+  if (sub_category_id) {
+    queryParams.push(sub_category_id)
+    conditions.push(`p.sub_category_id = $${queryParams.length}`)
+  }
+
+  if (is_featured) {
+    queryParams.push(is_featured)
+    conditions.push(`p.is_featured = $${queryParams.length}`)
   }
 
   // FIXED: Đúng syntax WHERE clause
@@ -104,7 +117,9 @@ const getAllProductsPrivate = async ({
   brand_id,
   min_price,
   max_price,
-  active
+  active,
+  sub_category_id,
+  is_featured
 }) => {
   const offset = (page - 1) * limit
   const queryParams = []
@@ -145,6 +160,16 @@ const getAllProductsPrivate = async ({
   if (active) {
     queryParams.push(active)
     conditions.push(`p.active = $${queryParams.length}`)
+  }
+
+  if (sub_category_id) {
+    queryParams.push(sub_category_id)
+    conditions.push(`p.sub_category_id = $${queryParams.length}`)
+  }
+
+  if (is_featured) {
+    queryParams.push(is_featured)
+    conditions.push(`p.is_featured = $${queryParams.length}`)
   }
 
   if (conditions.length > 0) {
@@ -299,7 +324,9 @@ const createProduct = async (
     active,
     index,
     slug,
-    keyword
+    keyword,
+    sub_category_id,
+    is_featured
   } = data
 
   const existingIndex = await db.query(
@@ -315,8 +342,9 @@ const createProduct = async (
   const result = await db.query(
     `INSERT INTO products (
       name, description, short_description,
-      price, price_sale, category_id, brand_id, active, index, slug, image
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      price, price_sale, category_id, brand_id, active, index, slug, 
+      sub_category_id, is_featured, image
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     RETURNING id`,
     [
       name,
@@ -329,6 +357,8 @@ const createProduct = async (
       active,
       index,
       slug,
+      sub_category_id,
+      is_featured,
       image
     ]
   )
@@ -384,6 +414,8 @@ const updateProduct = async (
       active,
       index,
       slug,
+      sub_category_id,
+      is_featured,
       keyword = []
     } = data
 
@@ -470,6 +502,18 @@ const updateProduct = async (
     if (slug !== undefined) {
       updateFields.push(`slug = $${paramIndex}`)
       params.push(slug)
+      paramIndex++
+    }
+
+    if (sub_category_id !== undefined) {
+      updateFields.push(`sub_category_id = $${paramIndex}`)
+      params.push(sub_category_id)
+      paramIndex++
+    }
+
+    if (is_featured !== undefined) {
+      updateFields.push(`is_featured = $${paramIndex}`)
+      params.push(is_featured)
       paramIndex++
     }
 

@@ -12,7 +12,9 @@ const getAll = async (req, res) => {
       brand_id,
       min_price,
       max_price,
-      active
+      active,
+      sub_category_id,
+      is_featured
     } = req.query
     const result = await productModel.getAllProducts({
       page,
@@ -22,7 +24,9 @@ const getAll = async (req, res) => {
       brand_id,
       min_price,
       max_price,
-      active
+      active,
+      sub_category_id,
+      is_featured
     })
     res.json(result)
   } catch (err) {
@@ -46,7 +50,9 @@ const getAllPrivate = async (req, res) => {
       brand_id,
       min_price,
       max_price,
-      active
+      active,
+      sub_category_id,
+      is_feature
     } = req.query
     const result = await productModel.getAllProductsPrivate({
       page,
@@ -56,7 +62,9 @@ const getAllPrivate = async (req, res) => {
       brand_id,
       min_price,
       max_price,
-      active
+      active,
+      sub_category_id,
+      is_feature
     })
     res.json(result)
   } catch (err) {

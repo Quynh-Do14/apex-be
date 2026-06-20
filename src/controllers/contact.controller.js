@@ -1,6 +1,7 @@
 const { ROLES } = require('../constants')
 const contactModel = require('../models/contact.model')
 const userModel = require('../models/user.model')
+const emailService = require('../middlewares/email.middleware')
 
 const getAll = async (req, res) => {
   try {
@@ -30,6 +31,18 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   const { name, email, phone_number, message } = req.body
+  await emailService.sendContactConfirmationEmail(
+    name,
+    email,
+    phone_number,
+    message
+  )
+  await emailService.sendContactConfirmationEmailToAdmin(
+    name,
+    email,
+    phone_number,
+    message
+  )
   const category = await contactModel.createContact(
     name,
     email,
