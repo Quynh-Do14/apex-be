@@ -31,7 +31,7 @@ const getAllProducts = async ({
     LEFT JOIN brands b ON p.brand_id = b.id
   `
 
-  const conditions = ['p.active = true'] // Thêm active vào đây
+  const conditions = ['p.active = true']
 
   if (search) {
     queryParams.push(`%${search}%`)
@@ -58,7 +58,8 @@ const getAllProducts = async ({
     conditions.push(`p.price <= $${queryParams.length}`)
   }
 
-  if (sub_category_id) {
+  // Xử lý sub_category_id
+  if (sub_category_id !== undefined && sub_category_id !== null) {
     queryParams.push(sub_category_id)
     conditions.push(`p.sub_category_id = $${queryParams.length}`)
   }
@@ -68,28 +69,23 @@ const getAllProducts = async ({
     conditions.push(`p.is_featured = $${queryParams.length}`)
   }
 
-  // FIXED: Đúng syntax WHERE clause
   if (conditions.length > 0) {
     const whereClause = ` WHERE ${conditions.join(' AND ')}`
     query += whereClause
     countQuery += whereClause
   }
 
-  // Thêm ORDER BY và pagination
   query += ` ORDER BY p.index ASC`
 
-  // Thêm limit và offset
   queryParams.push(limit)
   queryParams.push(offset)
   query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`
 
-  // Execute queries
   const [result, count] = await Promise.all([
     db.query(query, queryParams),
     db.query(countQuery, queryParams.slice(0, queryParams.length - 2))
   ])
 
-  // Lấy images (vẫn N+1 nhưng fix logic trước)
   for (let product of result.rows) {
     const imgs = await db.query(
       `SELECT image_url FROM product_images WHERE product_id = $1`,
@@ -162,7 +158,8 @@ const getAllProductsPrivate = async ({
     conditions.push(`p.active = $${queryParams.length}`)
   }
 
-  if (sub_category_id) {
+  // Xử lý sub_category_id
+  if (sub_category_id !== undefined && sub_category_id !== null) {
     queryParams.push(sub_category_id)
     conditions.push(`p.sub_category_id = $${queryParams.length}`)
   }
@@ -179,9 +176,7 @@ const getAllProductsPrivate = async ({
   }
 
   queryParams.push(limit, offset)
-  query += ` ORDER BY p.id DESC LIMIT $${queryParams.length - 1} OFFSET $${
-    queryParams.length
-  }`
+  query += ` ORDER BY p.id DESC LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`
 
   const result = await db.query(query, queryParams)
   const count = await db.query(
@@ -207,7 +202,6 @@ const getAllProductsPrivate = async ({
 }
 
 const getProductById = async id => {
-  // 1. Truy vấn thông tin sản phẩm chính
   const productRes = await db.query(
     `
     SELECT p.*, c.name AS category_name, b.name AS brand_name
@@ -222,21 +216,18 @@ const getProductById = async id => {
   const product = productRes.rows[0]
   if (!product) return null
 
-  // 2. Lấy ảnh sản phẩm
   const imageRes = await db.query(
     `SELECT image_url FROM product_images WHERE product_id = $1`,
     [product.id]
   )
   product.images = imageRes.rows.map(r => r.image_url)
 
-  // 3. Lấy danh sách thông số kỹ thuật (figures)
   const figureRes = await db.query(
     `SELECT id, key, value FROM product_figures WHERE product_id = $1`,
     [product.id]
   )
   product.productFigure = figureRes.rows
 
-  // 4. Lấy các sản phẩm cùng danh mục (trừ chính nó)
   const sameCategoryRes = await db.query(
     `
     SELECT name, price, image, slug FROM products
@@ -248,7 +239,6 @@ const getProductById = async id => {
   )
   product.sameCategoryProducts = sameCategoryRes.rows
 
-  // 5. Lấy các sản phẩm cùng thương hiệu (trừ chính nó)
   const sameBrandRes = await db.query(
     `
     SELECT * FROM products
@@ -270,7 +260,6 @@ const getProductById = async id => {
 }
 
 const getProductByIdPrivate = async id => {
-  // 1. Truy vấn thông tin sản phẩm chính
   const productRes = await db.query(
     `
     SELECT p.*, c.name AS category_name, b.name AS brand_name
@@ -285,14 +274,12 @@ const getProductByIdPrivate = async id => {
   const product = productRes.rows[0]
   if (!product) return null
 
-  // 2. Lấy ảnh sản phẩm
   const imageRes = await db.query(
     `SELECT image_url FROM product_images WHERE product_id = $1`,
     [id]
   )
   product.images = imageRes.rows.map(r => r.image_url)
 
-  // 3. Lấy danh sách thông số kỹ thuật (figures)
   const figureRes = await db.query(
     `SELECT id, key, value FROM product_figures WHERE product_id = $1`,
     [id]
@@ -335,10 +322,12 @@ const createProduct = async (
   )
 
   if (existingIndex.rows.length > 0) {
-    throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400) // ✅ Giữ nguyên
+    throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400)
   }
 
-  // 1. Insert sản phẩm
+  // Xử lý sub_category_id - nếu là null hoặc undefined thì set thành null
+  const subCategoryId = sub_category_id || null;
+
   const result = await db.query(
     `INSERT INTO products (
       name, description, short_description,
@@ -357,7 +346,7 @@ const createProduct = async (
       active,
       index,
       slug,
-      sub_category_id,
+      subCategoryId, // Đã xử lý null
       is_featured,
       image
     ]
@@ -365,7 +354,6 @@ const createProduct = async (
 
   const productId = result.rows[0].id
 
-  // 2. Insert ảnh phụ
   for (const url of imageUrls) {
     await db.query(
       `INSERT INTO product_images (product_id, image_url) VALUES ($1, $2)`,
@@ -373,13 +361,13 @@ const createProduct = async (
     )
   }
 
-  // 3. Insert thông số kỹ thuật
   for (const figure of productFigure) {
     await db.query(
       `INSERT INTO product_figures (product_id, key, value) VALUES ($1, $2, $3)`,
       [productId, figure.key, figure.value]
     )
   }
+
   const keywordList = JSON.parse(keyword || '[]')
   for (const key of keywordList) {
     await db.query(
@@ -391,16 +379,13 @@ const createProduct = async (
   return { id: productId }
 }
 
-/**
- * Cập nhật product
- */
 const updateProduct = async (
   id,
   data,
   newImageUrls = [],
   remainingImages = [],
   productFigure = [],
-  image = null // ảnh chính (thumbnail)
+  image = null
 ) => {
   try {
     const {
@@ -419,7 +404,6 @@ const updateProduct = async (
       keyword = []
     } = data
 
-    // Kiểm tra product tồn tại
     const checkExist = await db.query('SELECT id FROM products WHERE id = $1', [
       id
     ])
@@ -428,7 +412,6 @@ const updateProduct = async (
       throw new AppError('Không tìm thấy sản phẩm', 404)
     }
 
-    // Kiểm tra index đã tồn tại chưa (nếu có)
     if (index !== undefined && index !== null) {
       const existingOrder = await db.query(
         'SELECT id FROM products WHERE index = $1 AND id != $2',
@@ -436,11 +419,10 @@ const updateProduct = async (
       )
 
       if (existingOrder.rows.length > 0) {
-        throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400) // ✅ Giữ nguyên
+        throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400)
       }
     }
 
-    // Xây dựng câu update động
     let updateFields = []
     let params = []
     let paramIndex = 1
@@ -505,9 +487,10 @@ const updateProduct = async (
       paramIndex++
     }
 
+    // Xử lý sub_category_id - nếu là undefined thì giữ nguyên, nếu là null thì set null
     if (sub_category_id !== undefined) {
       updateFields.push(`sub_category_id = $${paramIndex}`)
-      params.push(sub_category_id || null)
+      params.push(sub_category_id || null) // Nếu falsy thì set null
       paramIndex++
     }
 
@@ -523,7 +506,6 @@ const updateProduct = async (
       paramIndex++
     }
 
-    // Thêm id vào params
     params.push(id)
 
     const updateQuery = `
@@ -561,7 +543,6 @@ const updateProduct = async (
       }
     }
 
-    // Cập nhật thông số kỹ thuật
     if (productFigure.length > 0) {
       await db.query(`DELETE FROM product_figures WHERE product_id = $1`, [id])
       for (const figure of productFigure) {
@@ -571,6 +552,7 @@ const updateProduct = async (
         )
       }
     }
+
     const keywordList = JSON.parse(keyword || '[]')
     await db.query(`DELETE FROM product_keyword WHERE product_id = $1`, [id])
     for (const key of keywordList) {
@@ -590,7 +572,6 @@ const updateProduct = async (
 
 const updateProductIndex = async items => {
   try {
-    // Validate dữ liệu trước
     for (const item of items) {
       const { id, index } = item
 
@@ -603,7 +584,6 @@ const updateProductIndex = async items => {
       }
     }
 
-    // Lấy danh sách ID để kiểm tra tồn tại
     const ids = items.map(item => item.id)
     const checkExist = await db.query(
       'SELECT id FROM products WHERE id = ANY($1::int[])',
@@ -619,7 +599,6 @@ const updateProductIndex = async items => {
       )
     }
 
-    // Kiểm tra index không trùng nhau trong request
     const orders = items.map(item => item.index)
     const uniqueOrders = [...new Set(orders)]
     if (orders.length !== uniqueOrders.length) {
@@ -629,7 +608,6 @@ const updateProductIndex = async items => {
       )
     }
 
-    // Kiểm tra index không bị trùng với sản phẩm khác ngoài danh sách đang cập nhật
     const existingOrder = await db.query(
       'SELECT index FROM products WHERE index = ANY($1::int[]) AND id != ALL($2::int[])',
       [orders, ids]
@@ -645,7 +623,6 @@ const updateProductIndex = async items => {
       )
     }
 
-    // Xây dựng câu query CASE WHEN để cập nhật tất cả cùng lúc
     let caseWhen = ''
     let params = []
     let paramIndex = 1
