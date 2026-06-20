@@ -158,8 +158,14 @@ class EmailService {
   /**
    * Gửi email xác nhận cho người dùng khi họ gửi form liên hệ thành công
    */
-  async sendContactConfirmationEmail (contactData) {
-    const { name, email, phone_number, message } = contactData
+  async sendContactConfirmationEmail (name, email, phone_number, message) {
+    console.log(
+      'name, email, phone_number, message',
+      name,
+      email,
+      phone_number,
+      message
+    )
 
     const mailOptions = {
       from: `"Hệ thống" <${process.env.EMAIL_FROM}>`,
@@ -193,9 +199,12 @@ class EmailService {
     }
   }
 
-  async sendContactConfirmationEmailToAdmin (contactData) {
-    const { name, email, phone_number, message } = contactData
-
+  async sendContactConfirmationEmailToAdmin (
+    name,
+    email,
+    phone_number,
+    message
+  ) {
     const mailOptions = {
       from: `"Hệ thống" <${process.env.EMAIL_FROM}>`,
       to: 'nghiatn209@gmail.com',
@@ -210,9 +219,8 @@ class EmailService {
             <h4 style="margin-top: 0; color: #333;">📋 Thông tin khách hàng:</h4>
             <p><strong>👤 Họ tên:</strong> ${name}</p>
             <p><strong>📧 Email:</strong> ${email || 'Không có email'}</p>
-            <p><strong>📧 SĐT:</strong> ${phone_number || 'Không có SĐT'}</p>
             <p><strong>📱 Số điện thoại:</strong> ${
-              phone || 'Không có số điện thoại'
+              phone_number || 'Không có số điện thoại'
             }</p>
             <p style="white-space: pre-wrap; line-height: 1.6;"><strong>💬 Nội dung:</strong> ${message}</p>
           </div>
