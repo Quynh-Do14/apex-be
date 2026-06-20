@@ -357,7 +357,7 @@ const createProduct = async (
       active,
       index,
       slug,
-      (sub_category_id = null),
+      (sub_category_id = 0),
       is_featured,
       image
     ]
@@ -414,7 +414,7 @@ const updateProduct = async (
       active,
       index,
       slug,
-      sub_category_id = null,
+      sub_category_id = 0,
       is_featured,
       keyword = []
     } = data
