@@ -59,7 +59,7 @@ const getAllProducts = async ({
   }
 
   // Xử lý sub_category_id
-  if (sub_category_id !== undefined && sub_category_id !== null) {
+  if (sub_category_id) {
     queryParams.push(sub_category_id)
     conditions.push(`p.sub_category_id = $${queryParams.length}`)
   }
